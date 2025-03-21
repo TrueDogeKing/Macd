@@ -63,8 +63,8 @@ def find_trade_signals(dates, prices,macd, signal):
 
 
 def simulate_trading(buy_signals, sell_signals, buy_prices, sell_prices, initial_capital=1000):
-    capital = initial_capital
-    holdings = 0
+    capital = 0
+    holdings = initial_capital
     transactions = []
     
     for i in range(len(buy_signals)):
@@ -80,28 +80,35 @@ def simulate_trading(buy_signals, sell_signals, buy_prices, sell_prices, initial
     final_value = capital if capital > 0 else holdings * sell_prices[-1]
     return transactions, final_value
 
-def plot_macd(dates, macd, signal, buy_signals, sell_signals, buy_values, sell_values):
+def plot_macd_with_price(dates, prices, macd, signal, buy_signals, sell_signals, buy_values, sell_values, buy_prices, sell_prices):
     """
-    Visualizes MACD, Signal line, and exact buy/sell points.
+    Visualizes MACD, Signal line, and Stock Price in subplots with buy/sell points.
     """
-    plt.figure(figsize=(12, 6))
-    plt.plot(dates, macd, label='MACD', color='blue')
-    plt.plot(dates, signal, label='Signal', color='red')
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
 
-    # Use exact X (date) & Y (MACD value) for buy/sell markers
-    # Sygnały kupna (zielone)
-    plt.scatter(buy_signals, buy_values, marker='^', color='green', label='Buy Signal', zorder=3)
+    # MACD and Signal Line
+    ax1.plot(dates, macd, label='MACD', color='blue')
+    ax1.plot(dates, signal, label='Signal', color='red')
+    ax1.scatter(buy_signals, buy_values, marker='^', color='green', label='Buy Signal', zorder=3)
+    ax1.scatter(sell_signals, sell_values, marker='v', color='red', label='Sell Signal', zorder=3)
+    ax1.set_ylabel("MACD Value")
+    ax1.legend()
+    ax1.grid(True, linestyle="--", alpha=0.6)
+    ax1.set_title('MACD & Signal Line')
 
-    # Sygnały sprzedaży (czerwone)
-    plt.scatter(sell_signals, sell_values, marker='v', color='red', label='Sell Signal', zorder=3)
-
-    plt.legend()
-    plt.title('MACD & Signal Line')
+    # Stock Price
+    ax2.plot(dates, prices, label='Stock Price', color='black', alpha=0.7)
+    ax2.bar(buy_signals, buy_prices, color='green', alpha=0.3, width=0.5, label='Buy Price')
+    ax2.bar(sell_signals, sell_prices, color='red', alpha=0.3, width=0.5, label='Sell Price')
+    ax2.set_ylabel("Stock Price")
+    ax2.legend()
+    ax2.grid(True, linestyle="--", alpha=0.6)
+    ax2.set_title('Stock Price & Buy/Sell Signals')
+    
     plt.xlabel('Date')
-    plt.ylabel('MACD Value')
     plt.xticks(rotation=45)
-    plt.grid(True, linestyle="--", alpha=0.6)
     plt.show()
+
 
 
 
@@ -122,4 +129,5 @@ for t in transactions:
 print(f"Final Portfolio Value: {final_value:.2f}")
 
 # Wizualizacja wyników
-plot_macd(dates, macd, signal, buy_signals, sell_signals,buy_values, sell_values)
+plot_macd_with_price(dates, prices, macd, signal, buy_signals, sell_signals, buy_values, sell_values, buy_prices, sell_prices)
+
