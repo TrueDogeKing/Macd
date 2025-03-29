@@ -66,7 +66,8 @@ def simulate_trading(buy_signals, sell_signals, buy_prices, sell_prices, initial
     capital = 0
     holdings = initial_capital
     transactions = []
-    
+
+    transactions = [(dates[0], "BUY", 6.02, 1000)] # dodanie initial capital do log
     for i in range(len(buy_signals)):
         if capital > 0:
             holdings = capital / buy_prices[i]
@@ -111,6 +112,58 @@ def plot_macd_with_price(dates, prices, macd, signal, buy_signals, sell_signals,
 
 
 
+def plot_portfolio_value(transactions):
+    """
+    Plots portfolio value (capital + stock holdings) over time after each transaction.
+    """
+    times = []
+    portfolio_values = []
+    capital = 0
+    holdings = 0
+
+    for t in transactions:
+        times.append(t[0])  # Transaction timestamp
+        if t[1] == "BUY":
+            holdings = t[3]  # Update stock holdings
+            capital = 0  # Spent cash
+        elif t[1] == "SELL":
+            capital = t[3]  # Update cash
+            holdings = 0  # Sold stocks
+        # Calculate portfolio value (cash + stock holdings)
+        portfolio_values.append(capital + holdings * (t[2] if t[1] == "SELL" else t[2]))
+
+    plt.figure(figsize=(12, 5))
+    plt.plot(times, portfolio_values, marker='o', linestyle='-', color='blue', label="Portfolio Value")
+    plt.xlabel("Date")
+    plt.ylabel("Portfolio Value ($)")
+    plt.title("Portfolio Value Over Time")
+    plt.xticks(rotation=45)
+    plt.legend()
+    plt.grid(True, linestyle="--", alpha=0.6)
+    plt.show()
+
+def plot_holdings_over_time(transactions):
+    """
+    Plots the number of stocks owned over time, skipping SELL transactions (only when holdings > 0).
+    """
+    times = []
+    holdings_over_time = []
+
+    for t in transactions:
+        if t[1] == "BUY":  # Only consider buy transactions
+            times.append(t[0])  # Transaction timestamp
+            holdings_over_time.append(t[3])  # Number of shares bought
+
+    plt.figure(figsize=(12, 5))
+    plt.plot(times, holdings_over_time, marker='o', linestyle='-', color='green', label="Stock Holdings")
+    plt.xlabel("Date")
+    plt.ylabel("Number of Shares Owned")
+    plt.title("Stock Holdings Over Time (BUY Transactions Only)")
+    plt.xticks(rotation=45)
+    plt.legend()
+    plt.grid(True, linestyle="--", alpha=0.6)
+    plt.show()
+
 
 # Wczytanie danych z pliku CSV za pomocą modułu Data.py
 dates, prices = load_data('nvidia.csv')
@@ -123,11 +176,27 @@ buy_signals, sell_signals,buy_values, sell_values,buy_prices,sell_prices= find_t
 
 transactions, final_value = simulate_trading(buy_signals, sell_signals, buy_prices, sell_prices)
 
+profitable_trades=0
 print("Transaction Log:")
-for t in transactions:
-    print(f"{t[0]} - {t[1]} at {t[2]:.2f}, Holdings: {t[3]:.2f}")
-print(f"Final Portfolio Value: {final_value:.2f}")
+for i in range(0, len(transactions),2):  
+    buy = transactions[i]
+    sell = transactions[i + 1] if i + 1 < len(transactions) else None
+    
+    if sell:
+        profit = sell[2] - buy[2]  # Obliczenie zysku/straty
+        print(f"{buy[0]} - {buy[1]} at {buy[2]:.2f}, Holdings: {buy[3]:.2f}")
+        print(f"{sell[0]} - {sell[1]} at {sell[2]:.2f}, Capital: {sell[3]:.2f}, Profit: {profit:.2f}")
+        if profit > 0:
+            profitable_trades += 1
+
+print(f"\nFinal Portfolio Value: {final_value:.2f}")
+print(f"Number of Profitable Transactions: {profitable_trades}")
+
 
 # Wizualizacja wyników
 plot_macd_with_price(dates, prices, macd, signal, buy_signals, sell_signals, buy_values, sell_values, buy_prices, sell_prices)
+plot_portfolio_value(transactions)
+plot_holdings_over_time(transactions)
+
+
 
